@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Create Parking Lot - Vehicle Parking App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-plus-circle"></i> Create New Parking Lot
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Parking Lot Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-building"></i></span>
+                            <input type="text" class="form-control" id="name" name="name" required 
+                                   placeholder="e.g., Downtown Mall Parking">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                            <input type="text" class="form-control" id="location" name="location" required 
+                                   placeholder="e.g., 123 Main Street, Downtown">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="total_spots" class="form-label">Total Parking Spots</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-grid-3x3"></i></span>
+                                    <input type="number" class="form-control" id="total_spots" name="total_spots" 
+                                           required min="1" max="500" placeholder="50">
+                                </div>
+                                <div class="form-text">Enter number of 4-wheeler parking spots (1-500)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="price_per_hour" class="form-label">Price per Hour ($)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                                    <input type="number" class="form-control" id="price_per_hour" name="price_per_hour" 
+                                           required min="0.50" max="100" step="0.50" placeholder="5.00">
+                                </div>
+                                <div class="form-text">Hourly parking rate (minimum $0.50)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Note:</strong> Once created, the parking spots will be automatically numbered 
+                        from 1 to the total number specified. You can edit these details later if needed.
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create Parking Lot
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Preview Card -->
+        <div class="card mt-4 border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-eye"></i> Preview</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Features:</strong>
+                        <ul class="list-unstyled mt-2">
+                            <li><i class="bi bi-check-circle text-success"></i> Automatic spot numbering</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Real-time availability tracking</li>
+                            <li><i class="bi bi-check-circle text-success"></i> User booking management</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Management Options:</strong>
+                        <ul class="list-unstyled mt-2">
+                            <li><i class="bi bi-pencil text-primary"></i> Edit lot details anytime</li>
+                            <li><i class="bi bi-plus-circle text-primary"></i> Add/remove spots</li>
+                            <li><i class="bi bi-eye text-primary"></i> Monitor all spot status</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation preview
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input[required]');
+    
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            if (this.checkValidity()) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.is-valid {
+    border-color: #28a745;
+}
+.is-invalid {
+    border-color: #dc3545;
+}
+</style>
+{% endblock %}

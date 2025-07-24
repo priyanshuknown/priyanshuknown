@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}User Dashboard - Vehicle Parking App{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-circle"></i> Welcome, {{ session.get('username') }}!</h2>
+    <div class="text-muted">
+        <i class="bi bi-clock"></i> {{ moment().format('MMMM Do YYYY, h:mm a') if moment else 'Today' }}
+    </div>
+</div>
+
+<!-- Current Bookings Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-car-front"></i> My Current Bookings 
+                    <span class="badge bg-light text-dark ms-2">{{ current_bookings|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if current_bookings %}
+                    <div class="row">
+                        {% for booking in current_bookings %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-info">
+                                    <div class="card-header bg-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">{{ booking.lot_name }}</h6>
+                                            <span class="badge bg-danger">Spot #{{ booking.spot_number }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <strong><i class="bi bi-geo-alt"></i> Location:</strong><br>
+                                            <small class="text-muted">{{ booking.location }}</small>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong><i class="bi bi-car"></i> Vehicle:</strong><br>
+                                            <span class="text-primary">{{ booking.vehicle_number }}</span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong><i class="bi bi-clock"></i> Booked At:</strong><br>
+                                            <small class="text-muted">{{ booking.booked_at.split('.')[0] if booking.booked_at else 'N/A' }}</small>
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong><i class="bi bi-currency-dollar"></i> Rate:</strong>
+                                            <span class="text-success">${{ "%.2f"|format(booking.price_per_hour) }}/hour</span>
+                                        </div>
+                                        <div class="d-grid">
+                                            <a href="{{ url_for('release_spot', spot_id=booking.id) }}" 
+                                               class="btn btn-danger"
+                                               onclick="return confirm('Are you sure you want to release this parking spot?')">
+                                                <i class="bi bi-box-arrow-right"></i> Release Spot
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-car display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">No Active Bookings</h4>
+                        <p class="text-muted">You don't have any parking spots booked currently.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Available Parking Lots Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-building"></i> Available Parking Lots
+                    <span class="badge bg-light text-dark ms-2">{{ available_lots|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if available_lots %}
+                    <div class="row">
+                        {% for lot in available_lots %}
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card parking-card h-100 shadow-sm border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0">{{ lot.name }}</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <i class="bi bi-geo-alt text-muted"></i>
+                                            <small class="text-muted">{{ lot.location }}</small>
+                                        </div>
+                                        
+                                        <div class="row text-center mb-3">
+                                            <div class="col-6">
+                                                <div class="border rounded p-2">
+                                                    <div class="h5 text-primary mb-0">{{ lot.total_spots or 0 }}</div>
+                                                    <small class="text-muted">Total</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="border rounded p-2">
+                                                    <div class="h5 text-success mb-0">{{ lot.available_spots or 0 }}</div>
+                                                    <small class="text-muted">Available</small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="h5 text-success text-center">
+                                                <i class="bi bi-currency-dollar"></i>{{ "%.2f"|format(lot.price_per_hour) }}/hour
+                                            </div>
+                                        </div>
+
+                                        <form method="POST" action="{{ url_for('book_spot', lot_id=lot.id) }}">
+                                            <div class="mb-3">
+                                                <label for="vehicle_number_{{ lot.id }}" class="form-label">
+                                                    <i class="bi bi-car"></i> Vehicle Number
+                                                </label>
+                                                <input type="text" class="form-control" 
+                                                       id="vehicle_number_{{ lot.id }}" 
+                                                       name="vehicle_number" 
+                                                       required 
+                                                       placeholder="e.g., ABC-1234"
+                                                       pattern="[A-Za-z0-9\-]+"
+                                                       title="Enter a valid vehicle number">
+                                            </div>
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-success"
+                                                        {% if lot.available_spots == 0 %}disabled{% endif %}>
+                                                    {% if lot.available_spots > 0 %}
+                                                        <i class="bi bi-check-circle"></i> Book Now
+                                                    {% else %}
+                                                        <i class="bi bi-x-circle"></i> No Spots Available
+                                                    {% endif %}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-building display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">No Available Parking Lots</h4>
+                        <p class="text-muted">
+                            Sorry, there are no parking lots with available spots at the moment.<br>
+                            Please check back later or contact the administrator.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Section -->
+{% if current_bookings or available_lots %}
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Quick Statistics</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="h4 text-info">{{ current_bookings|length }}</div>
+                        <div class="text-muted">Current Bookings</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="h4 text-success">{{ available_lots|length }}</div>
+                        <div class="text-muted">Available Lots</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="h4 text-primary">{{ available_lots|sum(attribute='available_spots') or 0 }}</div>
+                        <div class="text-muted">Total Available Spots</div>
+                    </div>
+                    <div class="col-md-3">
+                        {% if available_lots %}
+                            {% set avg_price = (available_lots|sum(attribute='price_per_hour')) / (available_lots|length) %}
+                            <div class="h4 text-warning">${{ "%.2f"|format(avg_price) }}</div>
+                        {% else %}
+                            <div class="h4 text-warning">$0.00</div>
+                        {% endif %}
+                        <div class="text-muted">Avg. Price/Hour</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation for vehicle numbers
+    const vehicleInputs = document.querySelectorAll('input[name="vehicle_number"]');
+    
+    vehicleInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const value = this.value.toUpperCase();
+            this.value = value;
+            
+            if (this.checkValidity()) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        });
+    });
+    
+    // Auto-refresh bookings every 30 seconds
+    setInterval(function() {
+        // Only refresh if user is on the page and has active bookings
+        if (document.visibilityState === 'visible' && {{ current_bookings|length }} > 0) {
+            // You could implement AJAX refresh here
+            console.log('Auto-refresh check...');
+        }
+    }, 30000);
+});
+</script>
+
+<style>
+.is-valid {
+    border-color: #28a745;
+}
+.is-invalid {
+    border-color: #dc3545;
+}
+.card.border-success {
+    border-color: #28a745 !important;
+}
+.card.border-info {
+    border-color: #17a2b8 !important;
+}
+</style>
+{% endblock %}
