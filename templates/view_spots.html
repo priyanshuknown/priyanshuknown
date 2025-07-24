@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}View Spots - {{ lot.name }} - Vehicle Parking App{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-eye"></i> {{ lot.name }}</h2>
+        <p class="text-muted mb-0">
+            <i class="bi bi-geo-alt"></i> {{ lot.location }} • 
+            <i class="bi bi-currency-dollar"></i>{{ "%.2f"|format(lot.price_per_hour) }}/hour
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+        <a href="{{ url_for('edit_lot', lot_id=lot.id) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Edit Lot
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Row -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="h3 text-primary">{{ spots|length }}</div>
+                <div class="text-muted">Total Spots</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="h3 text-success">{{ spots|selectattr('is_occupied', 'equalto', 0)|list|length }}</div>
+                <div class="text-muted">Available</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="h3 text-danger">{{ spots|selectattr('is_occupied', 'equalto', 1)|list|length }}</div>
+                <div class="text-muted">Occupied</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                {% set occupancy_rate = ((spots|selectattr('is_occupied', 'equalto', 1)|list|length) / (spots|length if spots|length > 0 else 1)) * 100 %}
+                <div class="h3 {% if occupancy_rate > 80 %}text-danger{% elif occupancy_rate > 50 %}text-warning{% else %}text-success{% endif %}">
+                    {{ "%.0f"|format(occupancy_rate) }}%
+                </div>
+                <div class="text-muted">Occupied</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-4">
+                <div class="spot-box spot-available d-inline-flex me-2">A</div>
+                <span>Available Spot</span>
+            </div>
+            <div class="col-md-4">
+                <div class="spot-box spot-occupied d-inline-flex me-2">O</div>
+                <span>Occupied Spot</span>
+            </div>
+            <div class="col-md-4">
+                <small class="text-muted">Click on occupied spots for details</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Parking Spots Grid -->
+<div class="card">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="bi bi-grid-3x3"></i> Parking Spots Layout</h5>
+    </div>
+    <div class="card-body">
+        {% if spots %}
+            <div class="spot-grid">
+                {% for spot in spots %}
+                    <div class="spot-box {% if spot.is_occupied %}spot-occupied{% else %}spot-available{% endif %}"
+                         {% if spot.is_occupied %}
+                             data-bs-toggle="modal" data-bs-target="#spotModal"
+                             data-spot-number="{{ spot.spot_number }}"
+                             data-vehicle-number="{{ spot.vehicle_number }}"
+                             data-username="{{ spot.username }}"
+                             data-booked-at="{{ spot.booked_at }}"
+                             style="cursor: pointer;"
+                         {% endif %}>
+                        {{ spot.spot_number }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-exclamation-triangle display-1 text-warning"></i>
+                <h4 class="text-muted mt-3">No Parking Spots</h4>
+                <p class="text-muted">This parking lot doesn't have any spots configured.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Occupied Spots Details Table -->
+{% set occupied_spots = spots|selectattr('is_occupied', 'equalto', 1)|list %}
+{% if occupied_spots %}
+<div class="card mt-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Currently Occupied Spots</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Spot #</th>
+                        <th>Vehicle Number</th>
+                        <th>User</th>
+                        <th>Booked At</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for spot in occupied_spots %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-danger">{{ spot.spot_number }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ spot.vehicle_number }}</strong>
+                        </td>
+                        <td>
+                            <i class="bi bi-person-circle"></i> {{ spot.username }}
+                        </td>
+                        <td>
+                            {{ spot.booked_at.split('.')[0] if spot.booked_at else 'N/A' }}
+                        </td>
+                        <td>
+                            <span class="text-muted">Active</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal for spot details -->
+<div class="modal fade" id="spotModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle"></i> Spot Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Spot Number:</strong><br>
+                        <span id="modal-spot-number" class="text-primary"></span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Vehicle Number:</strong><br>
+                        <span id="modal-vehicle-number" class="text-dark"></span>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-6">
+                        <strong>User:</strong><br>
+                        <span id="modal-username" class="text-info"></span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Booked At:</strong><br>
+                        <span id="modal-booked-at" class="text-muted"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle modal data population
+    const spotModal = document.getElementById('spotModal');
+    if (spotModal) {
+        spotModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            
+            document.getElementById('modal-spot-number').textContent = button.getAttribute('data-spot-number');
+            document.getElementById('modal-vehicle-number').textContent = button.getAttribute('data-vehicle-number');
+            document.getElementById('modal-username').textContent = button.getAttribute('data-username');
+            
+            const bookedAt = button.getAttribute('data-booked-at');
+            document.getElementById('modal-booked-at').textContent = bookedAt ? bookedAt.split('.')[0] : 'N/A';
+        });
+    }
+});
+</script>
+{% endblock %}
